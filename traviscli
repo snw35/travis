@@ -1,0 +1,123 @@
+#!/bin/bash
+set -ux
+
+# Variables
+timezone=Europe/London
+image_name=travis
+image_tag=t4
+container_name=travis
+home_directory=$HOME
+
+# Shell is a custom bash shell by default, or can be set to:
+# 'bash' for a plain bash shell that uses your host config
+# 'fish' for a plain fish shell that uses your host config
+user_shell="bash --rcfile /etc/bashrc"
+
+if [ ! -d $home_directory ]; then
+  echo '$HOME is empty or does not exist, please update this script with the location of your home directory.'
+  exit 1
+fi
+
+if [ -z "${SSH_AGENT_PID:-}" ] || [ -z "${SSH_AUTH_SOCK:-}" ]; then
+  declare -r SSH_AGENT_PID='0'
+fi
+
+if hash docker 2>/dev/null; then
+
+  # # Always pull latest image
+  # ImagePullOutput=$(docker pull $image_name:$image_tag | tee /dev/tty)
+  #
+  # # If new image has been pulled AND container is running, stop and remove it
+  # if [[ $ImagePullOutput != *"up to date"* ]] && [[ "$(docker ps -q -f name=$container_name)" ]]; then
+  #   docker stop $container_name
+  #   docker rm -f $container_name
+  # fi
+
+  if [ ! "$(docker ps -q -f name=$container_name)" ]; then
+    # Container is not running
+
+    if [ "$(docker ps -aq -f status=exited -f name=$container_name)" ]; then
+      # Container exists and is stopped or exited, so remove it
+      docker rm -f $container_name
+    fi
+
+    if hash id 2>/dev/null; then
+
+      if [ "${SSH_AGENT_PID}" -eq 0 ]; then
+        # Run without ssh agent passthrough
+        docker run -dit \
+          --name $container_name \
+          --hostname $container_name \
+          --workdir "$HOME" \
+          --mount type=bind,source=$home_directory,target="$HOME" \
+          -e TZ=$timezone -e HOST_USER_NAME="$(id -u -n)" \
+          -e HOST_GROUP_NAME="$(id -g -n)" \
+          -e HOST_USER_ID="$(id -u)" \
+          -e HOST_GROUP_ID="$(id -g)" \
+          -e HOST_HOME_DIRECTORY="$HOME" \
+          $image_name:$image_tag &> /dev/null
+        retVal=$?
+      else
+        # Run with ssh agent passthrough, full options, and all bind-mounts
+        docker run -dit \
+          --name $container_name \
+          --hostname $container_name \
+          --workdir "$HOME" \
+          --mount type=bind,source=$home_directory,target="$HOME" \
+          --mount type=bind,source="`dirname $SSH_AUTH_SOCK`",target="`dirname $SSH_AUTH_SOCK`" \
+          -e TZ=$timezone -e HOST_USER_NAME="$(id -u -n)" \
+          -e HOST_GROUP_NAME="$(id -g -n)" \
+          -e HOST_USER_ID="$(id -u)" \
+          -e HOST_GROUP_ID="$(id -g)" \
+          -e HOST_HOME_DIRECTORY="$HOME" \
+          -e SSH_AUTH_SOCK="${SSH_AUTH_SOCK}" \
+          $image_name:$image_tag &> /dev/null
+        retVal=$?
+      fi
+      if [ $retVal -ne 0 ]; then
+        echo "Error starting travis container!"
+        exit 1
+      fi
+      docker exec -it $container_name su-exec "$(id -u)":"$(id -g)" $user_shell
+
+    else
+      if [ "${SSH_AGENT_PID}" -eq 0 ]; then
+        # Run without id or ssh agent passthrough
+        docker run -dit \
+          --name $container_name \
+          --hostname $container_name \
+          --workdir "/home/user" \
+          --mount type=bind,source=$home_directory,target="/home/user" \
+          -e TZ=$timezone \
+          $image_name:$image_tag &> /dev/null
+        retVal=$?
+      else
+        # Run without id, but with ssh agent passthrough
+        docker run -dit \
+          --name $container_name \
+          --hostname $container_name \
+          --workdir "/home/user" \
+          --mount type=bind,source=$home_directory,target="/home/user" \
+          --mount type=bind,source="`dirname $SSH_AUTH_SOCK`",target="`dirname $SSH_AUTH_SOCK`" \
+          -e TZ=$timezone \
+          -e SSH_AUTH_SOCK="${SSH_AUTH_SOCK}" \
+          $image_name:$image_tag &> /dev/null
+        retVal=$?
+      fi
+      if [ $retVal -ne 0 ]; then
+        echo "Error starting travis container!"
+        exit 1
+      fi
+      docker exec -it $container_name su-exec 1000:1000 $user_shell
+    fi
+  else
+    if hash id 2>/dev/null; then
+      docker exec -it $container_name su-exec "$(id -u)":"$(id -g)" $user_shell
+    else
+      docker exec -it $container_name su-exec 1000:1000 $user_shell
+    fi
+  fi
+
+else
+  echo "docker command not found, you must install docker first."
+fi
