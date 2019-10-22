@@ -1,17 +1,34 @@
 services: docker
 language: bash
-
-# Only build tags
-if: tag IS present
-
 install:
+  - env | sort
   - git clone https://github.com/docker-library/official-images.git ~/official-images
+  - docker run -it --rm --name nvchecker --mount type=bind,source=${PWD},target=/data/ -w /data -e NVCHECKER_GITHUB_TOKEN=${GH_TOKEN} snw35/nvchecker:latest nvchecker nvchecker.ini
+  - docker run -it --rm --name dfupdate --mount type=bind,source=${PWD},target=/data/ -w /data snw35/dfupdate:latest
+  - if [[ $(git status --porcelain | wc -l) -eq 0 ]] && [[ -z ${TRAVIS_TAG} ]]; then
+      echo "No local changes detected and no tag set, nothing to build, exiting.";
+      travis_terminate 0;
+    else
+      echo "Local changes or tagged commit detected, continuing...";
+    fi
 
 before_script:
-  - env | sort
-  - IMAGE="${TRAVIS_REPO_SLUG}:${TRAVIS_TAG}"
+  - TRAVIS_VERSION=`grep "ENV TRAVIS_VERSION" Dockerfile | cut -d " " -f 3 | head -n 1`
+  - BASE_VERSION=`grep "FROM" Dockerfile | cut -d " " -f 2 | cut -d ":" -f 2`
+  - IMAGE="${TRAVIS_REPO_SLUG}:${TRAVIS_VERSION}"
+  - PROPOSED_TAG=${TRAVIS_VERSION}-${BASE_VERSION}
+  - git config --local user.name "${DOCKER_USERNAME}"
+  - git config --local user.email "snw35@use.startmail.com"
+  - git remote add upstream https://${GH_TOKEN}@github.com/${TRAVIS_REPO_SLUG}.git > /dev/null 2>&1
+  - if [ $(git ls-remote --tags upstream "${PROPOSED_TAG}" | wc -l) -eq 0 ]; then
+      echo "Propsoed tag does not exist on remote, continuing.";
+    else
+      echo "Proposed tag already exists on remote, skipping container build.";
+      travis_terminate 0;
+    fi
 
 script:
+  - env | sort
   - travis_retry docker build -t "$IMAGE" .
   - ~/official-images/test/run.sh "$IMAGE" || travis_terminate 1;
   - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
@@ -21,3 +38,24 @@ script:
 
 after_script:
   - docker images
+
+before_deploy:
+  - cp new_ver.txt old_ver.txt
+  - git checkout master
+  - git add -A
+  - git commit --message "Software Updated"
+  - git tag $PROPOSED_TAG
+  - git push --quiet --set-upstream upstream
+  - git push --tags --quiet --set-upstream upstream
+
+deploy:
+  provider: releases
+  api_key: "$GH_TOKEN"
+  skip_cleanup: true
+  body: 'base image version: $BASE_VERSION
+    travis version: $TRAVIS_VERSION
+    image deployed: $IMAGE'
+
+branches:
+  except:
+  - "/^untagged/"
