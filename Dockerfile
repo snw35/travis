@@ -20,7 +20,8 @@ RUN apk --update --no-cache upgrade -a \
   && apk del build.deps \
   && apk --upgrade --no-cache add \
     bash \
-  && chmod +x /docker-entrypoint.sh
+  && chmod +x /docker-entrypoint.sh \
+  && travis --help
 
 COPY bashrc /etc/bashrc
 
