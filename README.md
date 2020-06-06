@@ -3,8 +3,22 @@
 * [Travis CI: ![Build Status](https://travis-ci.org/snw35/travis.svg?branch=master)](https://travis-ci.org/snw35/travis)
 * [Dockerhub: snw35/travis](https://hub.docker.com/r/snw35/travis)
 
-Travis CLI Container, updated weekly.
+Self-updating Travis CLI container.
+
+Allows you to run the travis CLI tool without having to install Ruby and build the gem and all of its dependencies on your machine.
 
 ## How To Use
 
-The `traviscli` helper script is provided to make running this image easier. It will start the container with your home directory bind-mounted and the UID and GIS matched to the host. The `travis` command can then be used to e.g add encrypted variables to .travis files.
+Install and run the 'travis' command:
+
+```shell
+sudo curl https://raw.githubusercontent.com/snw35/travis/master/traviscli -o /usr/local/bin/traviscli && sudo chmod +x /usr/local/bin/traviscli;
+```
+
+Navigate to your local checkout of the repo you want to work with
+
+You can now run 'travis' and perform any tasks the CLI is capable of. For example, to add an encrypted variable to a `.travis.yml` file:
+
+```shell
+travis encrypt VARIABLE_NAME=raw_value --add env.global
+```
