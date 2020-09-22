@@ -1,1 +1,1 @@
-TRAVIS 1.10.0.pre.rc1
+TRAVIS 1.10.0.pre.rc4
