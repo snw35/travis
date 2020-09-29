@@ -1,6 +1,6 @@
 FROM ruby:2.7.1-alpine3.12
 
-ENV TRAVIS_VERSION 1.10.0.pre.rc4
+ENV TRAVIS_VERSION 1.10.1.travis.1305.9
 
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 
