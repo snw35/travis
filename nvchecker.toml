@@ -1,0 +1,7 @@
+[__config__]
+oldver = "old_ver.json"
+newver = "new_ver.json"
+
+[TRAVIS]
+source = "gems"
+gems = "travis"
