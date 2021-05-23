@@ -1,6 +1,6 @@
 # travis
 
-* [Travis CI: ![Build Status](https://travis-ci.org/snw35/travis.svg?branch=master)](https://travis-ci.org/snw35/travis)
+* [Travis CI: ![Build Status](https://travis-ci.com/snw35/travis.svg?branch=master)](https://travis-ci.com/github/snw35/travis)
 * [Dockerhub: snw35/travis](https://hub.docker.com/r/snw35/travis)
 
 Self-updating Travis CLI container.
