@@ -1,4 +1,4 @@
-FROM ruby:3.0.3-alpine3.14
+FROM ruby:3.0.3-alpine3.15
 
 ENV TRAVIS_VERSION 1.10.0
 
