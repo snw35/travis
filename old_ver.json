@@ -1,4 +1,12 @@
 {
-  "BASE": "3.2.0-alpine3.17",
-  "TRAVIS": "1.11.1"
+  "version": 2,
+  "data": {
+    "BASE": {
+      "version": "3.4.6-alpine3.22"
+    },
+    "TRAVIS": {
+      "version": "1.14.0",
+      "url": "https://rubygems.org/gems/travis/versions/1.14.0"
+    }
+  }
 }
