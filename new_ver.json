@@ -2,7 +2,7 @@
   "version": 2,
   "data": {
     "BASE": {
-      "version": "3.4.7-alpine3.22"
+      "version": "3.4.7-alpine3.23"
     },
     "TRAVIS": {
       "version": "1.14.0",
