@@ -5,7 +5,7 @@ newver = "new_ver.json"
 [BASE]
 source = "container"
 container = "library/ruby"
-include_regex = "\\d+\\.\\d+\\.?\\d?-alpine\\d\\.\\d+"
+include_regex = "3\\.\\d+\\.?\\d?-alpine\\d\\.\\d+"
 
 [TRAVIS]
 source = "gems"
